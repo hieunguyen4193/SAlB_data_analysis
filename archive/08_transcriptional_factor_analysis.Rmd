@@ -1,0 +1,231 @@
+---
+title: "Endogenous cells dataset, TF analysis, cluster resolution `r params$cluster.resolution`"
+author:
+  - "trnguyen@ukaachen.de"
+date: "Last update on `r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    keep_md: no
+    df_print: paged
+    toc: true
+    toc_float:
+      toc_collapsed: false
+    toc_depth: 3
+    number_sections: true
+    theme: lumen
+params:
+  cluster.resolution: NA
+---
+
+
+```{css zoom-lib-src, echo = FALSE}
+script src = "https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"
+```
+
+```{js zoom-jquery, echo = FALSE}
+ $(document).ready(function() {
+    $('body').prepend('<div class=\"zoomDiv\"><img src=\"\" class=\"zoomImg\"></div>');
+    // onClick function for all plots (img's)
+    $('img:not(.zoomImg)').click(function() {
+      $('.zoomImg').attr('src', $(this).attr('src')).css({width: '100%'});
+      $('.zoomDiv').css({opacity: '1', width: 'auto', border: '1px solid white', borderRadius: '5px', position: 'fixed', top: '50%', left: '50%', marginRight: '-50%', transform: 'translate(-50%, -50%)', boxShadow: '0px 0px 50px #888888', zIndex: '50', overflow: 'auto', maxHeight: '100%'});
+    });
+    // onClick function for zoomImg
+    $('img.zoomImg').click(function() {
+      $('.zoomDiv').css({opacity: '0', width: '0%'}); 
+    });
+  });
+```
+
+<style type="text/css">
+    div.datatables { height: auto !important;}
+</style>
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=20, fig.height=12}
+#####----------------------------------------------------------------------#####
+#
+# trnguyen@ukaachen.de
+#
+#####----------------------------------------------------------------------#####
+
+##### clean up #####
+# gc()
+# rm(list = ls())
+
+scrna_pipeline_src <- "/home/hieunguyen/CRC1382/src_2023/src_pipeline/scRNA_GEX_pipeline/processes_src"
+source(file.path(scrna_pipeline_src, "import_libraries.R"))
+source(file.path(scrna_pipeline_src, "helper_functions.R"))
+source(file.path(scrna_pipeline_src, "s8_integration_and_clustering.R"))
+
+cluster.resolution <- 0.5
+
+#####----------------------------------------------------------------------#####
+# CONFIGURATIONS 
+#####----------------------------------------------------------------------#####
+chosen.seed <- 42
+num.dim.integration <- 25 
+num.PCA <- 25
+num.dim.cluster <- 25
+num.PC.used.in.Clustering <- 25
+num.PC.used.in.UMAP <- 25
+my_random_seed <- 42
+
+path.to.src <- "/home/hieunguyen/CRC1382/src_2023/src_pipeline/scRNA_GEX_pipeline/processes_src"
+
+outdir <- "/media/hieunguyen/CRC1382H/CRC1382/outdir"
+PROJECT <- "20231018_SAlBounny"
+
+path.to.main.output <- file.path(outdir, PROJECT, "data_analysis")
+dir.create(path.to.main.output, showWarnings = FALSE, recursive = TRUE)
+
+path.to.01.output <- file.path(path.to.main.output, "01_output")
+path.to.02.output <- file.path(path.to.main.output, "02_output")
+path.to.03.output <- file.path(path.to.main.output, "03_output")
+
+path.to.08.output <- file.path(path.to.main.output, "08_output")
+dir.create(path.to.08.output, showWarnings = FALSE, recursive = TRUE)
+
+dir.create(file.path(path.to.08.output, "diff_TFSWMEAN_gene_score"), showWarnings = FALSE, recursive = TRUE)
+s.obj <- readRDS(file.path(path.to.03.output, sprintf("%s.filter_contaminated_cells.clusterRes_%s.rds", PROJECT, cluster.resolution)))
+
+# install.packages("/media/hieunguyen/HD0/storage/offline_pkgs/decoupleR_2.8.0.tar.gz", type = "source", repos = NULL)
+# install.packages(c("checkmate", "logger", "rlang", "vctrs", "pillar", "tibble", "tidyselect", "tidyr", "dplyr"))
+# install.packages("/media/hieunguyen/HD0/storage/offline_pkgs/dplyr_1.1.3.tar.gz", type = "source", repos = NULL)
+# install.packages("/media/hieunguyen/HD0/storage/offline_pkgs/OmnipathR_3.10.1.tar.gz", type = "source", repos = NULL)
+# remotes::install_github('saezlab/decoupleR')
+# remotes::install_github('saezlab/OmnipathR')
+library(decoupleR)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+DimPlot(object = s.obj, reduction = "INTE_UMAP", label = TRUE, label.box = TRUE, repel = TRUE)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+  library(OmnipathR)
+  library(decoupleR)
+
+  if (file.exists(file.path(path.to.08.output, "net.mouse.rds")) == FALSE){
+    omnipath_set_console_loglevel('trace')
+    cachedir <- file.path(path.to.08.output, "tmp")
+    if (file.exists(cachedir) == TRUE){
+      system(sprintf("rm -rf %s", cachedir))
+      dir.create(cachedir, showWarnings = FALSE, recursive = TRUE)
+    }
+    omnipath_set_cachedir(cachedir)
+    net.mouse <- get_collectri(organism='mouse', split_complexes=FALSE)
+    saveRDS(object = net.mouse, file.path(path.to.08.output, "net.mouse.rds"))  
+    system(sprintf("rm -rf %s", cachedir))
+  } else {
+    net.mouse <- readRDS(file.path(path.to.08.output, "net.mouse.rds"))
+  }
+  
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+if (file.exists(file.path(path.to.08.output, "WMEAN_acts.rds")) == FALSE){
+  mat <- as.matrix(s.obj@assays$RNA@data)
+  acts <- run_wmean(mat=mat, net=net.mouse, .source='source', .target='target', .mor='mor', times = 100, minsize = 5)
+  saveRDS(acts, file.path(path.to.08.output, "WMEAN_acts.rds"))
+} else {
+  acts <- readRDS(file.path(path.to.08.output, "WMEAN_acts.rds"))
+}
+
+##### ADD THE TF SCORE INFORMATION TO THE MAIN SEURAT OBJECT
+s.obj[['tfswmean']] <- acts %>%
+  filter(statistic == 'norm_wmean') %>%
+  pivot_wider(id_cols = 'source', names_from = 'condition',
+              values_from = 'score') %>%
+  column_to_rownames('source') %>%
+  Seurat::CreateAssayObject(.)
+
+DefaultAssay(object = s.obj) <- "tfswmean"
+
+s.obj <- ScaleData(s.obj)
+s.obj@assays$tfswmean@data <- s.obj@assays$tfswmean@scale.data
+
+all.act.names <- unique(acts$source)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+if ("svglite" %in% installed.packages() == FALSE){
+  install.packages("svglite")
+}
+if ("ggpubr" %in% installed.packages() == FALSE){
+  install.packages("ggpubr")
+}
+
+library(ggpubr)
+
+dir.create(file.path(path.to.08.output, "tfswmean_feature_plot"), showWarnings = FALSE, recursive = TRUE)
+for (gene in all.act.names){
+  print(sprintf("Working on gene %s", gene))
+  DefaultAssay(s.obj) <- "tfswmean"
+  p1.1 <- FeaturePlot(s.obj, features = c(gene), reduction = "INTE_UMAP", pt.size = 2, order = TRUE) +
+  scale_colour_gradient2(low = 'blue', mid = 'white', high = 'red') +
+  ggtitle(sprintf('%s activity', gene))  
+  p1.2 <- VlnPlot(s.obj, features = c(gene), group.by = "seurat_clusters", pt.size = 0)
+  
+  DefaultAssay(s.obj) <- "RNA"
+  p2.1 <- FeaturePlot(s.obj, features = c(gene), reduction = "INTE_UMAP", pt.size = 2, order = TRUE) 
+  ggtitle(sprintf('%s expression', gene))  
+  
+  p2.2 <- VlnPlot(s.obj, features = c(gene), group.by = "seurat_clusters", pt.size = 0)
+  
+  p3 <- DimPlot(object = s.obj, reduction = "INTE_UMAP", group.by = "name", label = TRUE, label.box = FALSE, repel = TRUE, order = TRUE)
+  
+  p <- ggarrange(p1.1, p1.2, p2.1, p2.2, p3, ncol = 2, nrow = 3)
+  ggsave(plot = p, filename = sprintf("Gene_%s_activity.svg", gene), path = file.path(path.to.08.output, "tfswmean_feature_plot"), width = 20, height = 15, dpi = 300)
+}
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+diff.test.tfs <- FindAllMarkers(object = s.obj, group.by = "seurat_clusters", assay = "tfswmean", test.use = "wilcox") %>%
+  subset(p_val_adj <= 0.05) %>% 
+  rowwise() %>% 
+  mutate(abs.log2FC = abs(avg_log2FC))
+
+for (cluster.id in unique(diff.test.tfs$cluster)){
+  tmpdf <- subset(diff.test.tfs, diff.test.tfs$cluster == cluster.id) %>% arrange(desc(abs.log2FC))
+  writexl::write_xlsx(tmpdf, file.path(path.to.08.output, "diff_TFSWMEAN_gene_score", sprintf("diff_TF_gene_cluster_%s.xlsx", cluster.id)))
+}
+```
+
+# Mean activity per group of the top 40 more variable TFs:
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+n_tfs <- 40
+
+df <- t(as.matrix(s.obj@assays$tfswmean@data)) %>%
+  as.data.frame() %>%
+  mutate(cluster = Idents(s.obj)) %>%
+  pivot_longer(cols = -cluster, names_to = "source", values_to = "score") %>%
+  group_by(cluster, source) %>%
+  summarise(mean = mean(score))
+
+tfs <- df %>%
+  group_by(source) %>%
+  summarise(std = sd(mean)) %>%
+  arrange(-abs(std)) %>%
+  head(n_tfs) %>%
+  pull(source)
+
+top_acts_mat <- df %>%
+  filter(source %in% tfs) %>%
+  pivot_wider(id_cols = 'cluster', names_from = 'source',
+              values_from = 'mean') %>%
+  column_to_rownames('cluster') %>%
+  as.matrix()
+
+# Choose color palette
+palette_length = 100
+my_color = colorRampPalette(c("Darkblue", "white","red"))(palette_length)
+
+my_breaks <- c(seq(-3, 0, length.out=ceiling(palette_length/2) + 1),
+               seq(0.05, 3, length.out=floor(palette_length/2)))
+
+pheatmap::pheatmap(top_acts_mat, border_color = "gray", color=my_color, breaks = my_breaks) 
+```
+
+

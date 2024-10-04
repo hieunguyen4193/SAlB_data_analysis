@@ -1,0 +1,232 @@
+---
+title: "Monocle3 trajectory analysis"
+author:
+  - "trnguyen@ukaachen.de"
+date: "Last update on `r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    number_sections: true
+    df_print: paged
+    toc: true
+    toc_float:
+      toc_collapsed: false
+    toc_depth: 3
+    theme: lumen
+params:
+  path.to.s.obj: NA
+---
+  
+```{css zoom-lib-src, echo = FALSE}
+script src = "https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"
+```
+
+```{js zoom-jquery, echo = FALSE}
+$(document).ready(function() {
+  $('body').prepend('<div class=\"zoomDiv\"><img src=\"\" class=\"zoomImg\"></div>');
+  // onClick function for all plots (img's)
+    $('img:not(.zoomImg)').click(function() {
+      $('.zoomImg').attr('src', $(this).attr('src')).css({width: '100%'});
+      $('.zoomDiv').css({opacity: '1', width: 'auto', border: '1px solid white', borderRadius: '5px', position: 'fixed', top: '50%', left: '50%', marginRight: '-50%', transform: 'translate(-50%, -50%)', boxShadow: '0px 0px 50px #888888', zIndex: '50', overflow: 'auto', maxHeight: '100%'});
+    });
+    // onClick function for zoomImg
+    $('img.zoomImg').click(function() {
+      $('.zoomDiv').css({opacity: '0', width: '0%'}); 
+    });
+  });
+```
+
+<style type="text/css">
+    div.datatables { height: auto !important;}
+</style>
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, include=TRUE, fig.height=10, fig.width=14, results='hide'}
+my_random_seed <- 42
+set.seed(my_random_seed)
+
+scrna_pipeline_src <- "/home/hieunguyen/CRC1382/src_2023/src_pipeline/scRNA_GEX_pipeline/processes_src"
+source(file.path(scrna_pipeline_src, "import_libraries.R"))
+source(file.path(scrna_pipeline_src, "helper_functions.R"))
+
+#####-----------------------------------------------------------------------#####
+##### install monocle
+#####-----------------------------------------------------------------------#####
+# if ("monocle3" %in% installed.packages()){
+  # remove.packages("monocle3")
+  # devtools::install_github("cysouw/qlcMatrix")
+  # install.packages("DDRTree")
+  # install.packages("densityClust")
+  # BiocManager::install("monocle.objSingleCell", update = FALSE)
+  # install.packages("fastICA")
+  # BiocManager::install("biocViews", update = FALSE)
+  # # remove.packages("BiocGenerics")
+  # BiocManager::install("HSMMSingleCell", update = FALSE)
+  # # install.packages("/media/hieunguyen/HD0/storage/offline_pkgs/monocle_2.30.0.tar.gz", type = "source", repos = NULL)
+  # install.packages("/media/hieunguyen/HD0/storage/offline_pkgs/monocle_2.30.0/monocle", type = "source", repos = NULL)
+  # BiocManager::install("tradeSeq", update = FALSE)
+# }
+#####-----------------------------------------------------------------------#####
+library(devtools)
+library(monocle)
+
+outdir <- "/media/hieunguyen/CRC1382H/CRC1382/outdir"
+PROJECT <- "20231018_SAlBounny"
+
+path.to.main.output <- file.path(outdir, PROJECT, "data_analysis")
+path.to.03.output <- file.path(path.to.main.output, "03_output")
+path.to.07.output <- file.path(path.to.main.output, "07_output")
+dir.create(path.to.07.output, showWarnings = FALSE, recursive = TRUE)
+
+cluster.resolution <- 0.5
+path.to.input.s.obj <- file.path(path.to.03.output, sprintf("20231018_SAlBounny.filter_contaminated_cells.clusterRes_%s.rds", cluster.resolution))
+s.obj <- readRDS(path.to.input.s.obj)
+monocle.obj <- readRDS(file.path(path.to.07.output, sprintf("monocle_obj_cluster_res_%s", cluster.resolution)))
+```
+
+# Plot
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+DimPlot(object = s.obj, reduction = "INTE_UMAP", label = TRUE, label.box = TRUE, repel = TRUE)
+```
+
+## UMAP
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+plot_cell_trajectory(monocle.obj, color_by = "seurat_clusters")
+```
+
+## Cell trajectory from `monocle2`
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+plot_cell_trajectory(monocle.obj)
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+plot_cell_trajectory(monocle.obj, color_by = "Pseudotime")
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+##### Add pseudotime information to the main seurat object
+seurat.metadata <- s.obj@meta.data %>% rownames_to_column("barcode")
+monocle.metadata <- pData(monocle.obj) %>% rownames_to_column("barcode") %>%
+  subset(select = c(barcode, Pseudotime, State))
+
+meta.data <- merge(seurat.metadata, monocle.metadata, by.x = "barcode", by.y = "barcode") %>%
+  column_to_rownames("barcode")
+meta.data <- meta.data[row.names(s.obj@meta.data), ]
+s.obj <- AddMetaData(object = s.obj, metadata = meta.data$Pseudotime, col.name = "Pseudotime")
+s.obj <- AddMetaData(object = s.obj, metadata = meta.data$State, col.name = "State")
+```
+
+## UMAP: grouped by trajectory STATE
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+DimPlot(object = s.obj, reduction = "INTE_UMAP", label = TRUE, label.box = TRUE, repel = TRUE, group.by = "State")
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+FeaturePlot(object = s.obj, reduction = "INTE_UMAP", label = TRUE, features = c("Pseudotime"))
+```
+
+# Differential gene expression along trajectory
+
+## Differential gene expression between "State"
+
+We consider the variable "State" as the new cluster identity and find genes that are differentially expressed between them (one-versus-rest)
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+if (file.exists(file.path(path.to.07.output, sprintf("state_markers.rds"))) == FALSE){
+  state.markers <- FindAllMarkers(object = s.obj, assay = "RNA", test.use = "wilcox", group.by = "State")
+  state.markers <- subset(state.markers, state.markers$p_val_adj <= 0.05)
+  saveRDS(state.markers, file.path(path.to.07.output, sprintf("state_markers.rds")))  
+} else {
+  state.markers <- readRDS(file.path(path.to.07.output, sprintf("state_markers.rds")))
+}
+
+```
+
+## Differential gene expression test between State i and State i + 1
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+if (file.exists(file.path(path.to.07.output, sprintf("pairwise_state_markers"))) == FALSE){
+  num.states <- length(unique(s.obj$State))
+  i.s <- seq(1, num.states - 1)
+  j.s <- seq(2, num.states)
+  
+  pairwise.state.markers <- hash()
+  for (item in seq(1, length(i.s))){
+    state1 <- i.s[[item]]
+    state2 <- j.s[[item]]
+    tmp.state.markers <- FindMarkers(object = s.obj, assay = "RNA", test.use = "wilcox", group.by = "State", ident.1 = state1, ident.2 = state2)
+    pairwise.state.markers[[sprintf("%s_%s", state1, state2)]] <- tmp.state.markers %>% subset(p_val_adj <= 0.05)
+  } 
+  saveRDS(pairwise.state.markers, file.path(path.to.07.output, sprintf("pairwise_state_markers")))
+} else {
+  pairwise.state.markers <- readRDS(file.path(path.to.07.output, sprintf("pairwise_state_markers")))
+}
+
+pw.state.genes <- c()
+for (i in names(pairwise.state.markers)){
+  pw.state.genes <- c(pw.state.genes, pairwise.state.markers[[i]] %>% row.names())  
+}
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+pw.state.genedf <- data.frame(gene = unique(pw.state.genes))
+
+for (col in names(pairwise.state.markers)){
+  pw.state.genedf[[col]] <- unlist(
+    lapply(pw.state.genedf$gene , function(x){
+      if (x %in% row.names(pairwise.state.markers[[col]])){
+        logfc <- pairwise.state.markers[[col]][x, ]$avg_log2FC
+        return(sign(logfc))
+      } else {
+        return(NA)
+      }
+    })
+  )  
+}
+
+pw.state.genedf <- pw.state.genedf %>% column_to_rownames("gene")
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+plot_genes_in_pseudotime(monocle.obj["Il2rb", ], color_by = "seurat_clusters", relative_expr = FALSE)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+plot_genes_in_pseudotime(monocle.obj["Il2rb", ], color_by = "seurat_clusters", relative_expr = TRUE)
+```
+
+## Differential gene expression test along trajectory with `VGAM`
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+if (file.exists(file.path(path.to.07.output, "diff_test_res_VGAM_pseudotime.rds")) == FALSE){
+  diff_test_res <- differentialGeneTest(monocle.obj, fullModelFormulaStr = "~sm.ns(Pseudotime)", cores = 15)
+  saveRDS(diff_test_res, file.path(path.to.07.output, "diff_test_res_VGAM_pseudotime.rds"))  
+} else {
+  diff_test_res <- readRDS(file.path(path.to.07.output, "diff_test_res_VGAM_pseudotime.rds"))
+}
+diff_test_res <- subset(diff_test_res, diff_test_res$qval <= 0.05)
+input.genes <- diff_test_res[order(diff_test_res$qval), ] %>% head(10) %>% rownames()
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+plot_genes_in_pseudotime(monocle.obj[input.genes, ], color_by = "seurat_clusters", relative_expr = TRUE)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+DefaultAssay(s.obj) <- "RNA"
+FeaturePlot(object = s.obj, reduction = "INTE_UMAP", features = input.genes)
+```
+
+# Branch analysis
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+BEAM_res <- BEAM(monocle.obj, branch_point = 1, cores = 15)
+BEAM_res <- BEAM_res[order(BEAM_res$qval),]
+BEAM_res <- BEAM_res[,c("gene_short_name", "pval", "qval")]
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+DefaultAssay(s.obj) <- "RNA"
+FeaturePlot(object = s.obj, reduction = "INTE_UMAP", features = row.names(head(BEAM_res, 10)), ncol = 3)
+```
+
