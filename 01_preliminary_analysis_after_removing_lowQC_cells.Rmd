@@ -13,9 +13,6 @@ output:
     toc_depth: 3
     number_sections: true
     theme: lumen
-params:
-  run: NA
-  sample.id: NA
 ---
 
 
@@ -68,18 +65,18 @@ num.dim.cluster <- 25
 num.PC.used.in.Clustering <- 25
 num.PC.used.in.UMAP <- 25
 my_random_seed <- 42
-
+output.version <- "20241021"
 path.to.src <- "/home/hieunguyen/CRC1382/src_2023/src_pipeline/scRNA_GEX_pipeline/processes_src"
-outdir <- "/home/hieunguyen/CRC1382/outdir/SAlBounny"
-PROJECT <- "20231018_SAlBounny"
+outdir <- "/home/hieunguyen/CRC1382/outdir"
+PROJECT <- "SAlBounny_full"
 
-path.to.main.output <- file.path(outdir, PROJECT, "data_analysis")
+path.to.main.output <- file.path(outdir, PROJECT, output.version, "data_analysis")
 dir.create(path.to.main.output, showWarnings = FALSE, recursive = TRUE)
 
 path.to.01.output <- file.path(path.to.main.output, "01_output")
 dir.create(path.to.01.output, showWarnings = FALSE, recursive = TRUE)
 
-path.to.s.obj <- file.path(outdir, PROJECT, "s8_output", sprintf("%s.output.s8.rds", PROJECT))
+path.to.s.obj <- file.path(outdir, PROJECT, output.version, "s8_output", sprintf("%s.output.s8.rds", PROJECT))
 
 s.obj <- readRDS(path.to.s.obj)
 ```

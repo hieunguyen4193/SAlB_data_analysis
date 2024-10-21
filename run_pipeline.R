@@ -13,7 +13,7 @@ path2src <- file.path(path.to.pipeline.src, "processes_src")
 source(file.path(path2src, "import_libraries.R"))
 source(file.path(path.to.pipeline.src, "scRNA_GEX_pipeline.R"))
 outdir <- "/home/hieunguyen/CRC1382/outdir"
-
+output.version <- "20241021"
 path.to.storage <- "/media/hieunguyen/HD01/storage"
 path2input <- file.path(path.to.storage, PROJECT, "cellranger_output")
 
@@ -22,12 +22,12 @@ stage_lst <- list()
 
 stage_lst = c(
   A_48h = "A_48h",
+  A_CD4 =   "A_CD4",
+  Ad7_2 = "Ad7_2",
+  I =   "I",
   N_48h =   "N_48h",
-  A_CD4 = "A_CD4",
-  N_CD4 =   "N_CD4",
-  Ad7_2 =   "Ad7_2",
-  Nd7_2 = "Nd7_2",
-  I     =   "I"
+  N_CD4 = "N_CD4",
+  Nd7_2     =   "Nd7_2"
 )
 
 MINCELLS  <- 5
@@ -88,7 +88,7 @@ num.dim.integration <- 30
 num.dim.cluster <- 30
 cluster.resolution <- 0.5
 
-path.to.output <- file.path(outdir, PROJECT)
+path.to.output <- file.path(outdir, PROJECT, output.version)
 dir.create(path.to.output, showWarnings = FALSE, recursive = TRUE)
 
 filtered.barcodes <- NULL
@@ -118,8 +118,10 @@ s.obj <- run_pipeline_GEX(path2src = path2src,
                           inte_pca_reduction_name = "INTE_PCA",
                           inte_umap_reduction_name = "INTE_UMAP",
                           with.VDJ = FALSE, 
-                          sw = sw)
+                          sw = sw, 
+                          k.filter = 200)
 
 #### ALWAYS REMEMBER TO SAVE SESSIONINFO !!!!!!
 writeLines(capture.output(sessionInfo()), file.path(path.to.output, sprintf("%s_sessionInfo.txt", PROJECT)))
+
 
