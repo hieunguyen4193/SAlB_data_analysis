@@ -79,7 +79,7 @@ output.version <- "20241021"
 if ("svglite" %in% installed.packages() == FALSE){
   install.packages("svglite")
 }
-path.to.main.output <- file.path(outdir, PROJECT, "data_analysis", output.version)
+path.to.main.output <- file.path(outdir, PROJECT, output.version, "data_analysis")
 dir.create(path.to.main.output, showWarnings = FALSE, recursive = TRUE)
 
 path.to.01.output <- file.path(path.to.main.output, "01_output")

@@ -1,0 +1,335 @@
+---
+title: "Endogenous cells dataset, preliminary data analysis, cluster resolution `r params$cluster.resolution`"
+author:
+  - "trnguyen@ukaachen.de"
+date: "Last update on `r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    keep_md: no
+    df_print: paged
+    toc: true
+    toc_float:
+      toc_collapsed: false
+    toc_depth: 3
+    number_sections: true
+    theme: lumen
+params:
+  cluster.resolution: NA
+---
+
+
+```{css zoom-lib-src, echo = FALSE}
+script src = "https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"
+```
+
+```{js zoom-jquery, echo = FALSE}
+ $(document).ready(function() {
+    $('body').prepend('<div class=\"zoomDiv\"><img src=\"\" class=\"zoomImg\"></div>');
+    // onClick function for all plots (img's)
+    $('img:not(.zoomImg)').click(function() {
+      $('.zoomImg').attr('src', $(this).attr('src')).css({width: '100%'});
+      $('.zoomDiv').css({opacity: '1', width: 'auto', border: '1px solid white', borderRadius: '5px', position: 'fixed', top: '50%', left: '50%', marginRight: '-50%', transform: 'translate(-50%, -50%)', boxShadow: '0px 0px 50px #888888', zIndex: '50', overflow: 'auto', maxHeight: '100%'});
+    });
+    // onClick function for zoomImg
+    $('img.zoomImg').click(function() {
+      $('.zoomDiv').css({opacity: '0', width: '0%'}); 
+    });
+  });
+```
+
+<style type="text/css">
+    div.datatables { height: auto !important;}
+</style>
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=20, fig.height=12}
+#####----------------------------------------------------------------------#####
+#
+# trnguyen@ukaachen.de
+#
+#####----------------------------------------------------------------------#####
+
+##### clean up #####
+# gc()
+# rm(list = ls())
+if ("svglite" %in% installed.packages() == FALSE){
+  install.packages("svglite")
+}
+scrna_pipeline_src <- "/home/hieunguyen/CRC1382/src_2023/src_pipeline/scRNA_GEX_pipeline/processes_src"
+source(file.path(scrna_pipeline_src, "import_libraries.R"))
+source(file.path(scrna_pipeline_src, "helper_functions.R"))
+
+source(file.path(scrna_pipeline_src, "s8_integration_and_clustering.R"))
+
+#####----------------------------------------------------------------------#####
+# CONFIGURATIONS 
+#####----------------------------------------------------------------------#####
+chosen.seed <- 42
+num.dim.integration <- 25 
+num.PCA <- 25
+num.dim.cluster <- 25
+num.PC.used.in.Clustering <- 25
+num.PC.used.in.UMAP <- 25
+my_random_seed <- 42
+
+path.to.src <- "/home/hieunguyen/CRC1382/src_2023/src_pipeline/scRNA_GEX_pipeline/processes_src"
+outdir <- "/home/hieunguyen/CRC1382/outdir"
+PROJECT <- "SAlBounny_full"
+output.version <- "20241021"
+
+path.to.main.output <- file.path(outdir, PROJECT, output.version, "data_analysis")
+dir.create(path.to.main.output, showWarnings = FALSE, recursive = TRUE)
+
+path.to.01.output <- file.path(path.to.main.output, "01_output")
+path.to.02.output <- file.path(path.to.main.output, "02_output")
+path.to.03.output <- file.path(path.to.main.output, "03_output")
+path.to.06.output <- file.path(path.to.main.output, "06_output")
+dir.create(path.to.06.output, showWarnings = FALSE, recursive = TRUE)
+
+s.obj.origin <- readRDS(file.path(path.to.02.output, "SAlBounny_full.filterCD4.rds"))
+
+##### remove some clusters of contaminated cells
+s.obj <- subset(s.obj.origin, seurat_clusters %in% c(7, 9, 10, 12, 13, 14) == FALSE)
+
+# cluster.resolution <- params$cluster.resolution
+cluster.resolution <- 0.5
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+if (file.exists(file.path(path.to.03.output, sprintf("%s.filter_contaminated_cells.clusterRes_%s.rds", PROJECT, cluster.resolution))) == FALSE){
+  num.PCA <- 30
+  num.PC.used.in.UMAP <- 30
+  num.PC.used.in.Clustering <- 30
+  num.dim.integration <- 30
+  num.dim.cluster <- 30
+  
+  DefaultAssay(s.obj) <- "RNA"
+  s.obj <- s8.integration.and.clustering(s.obj, 
+                             path.to.output = NULL, 
+                             save.RDS.s8 =  FALSE,
+                             PROJECT = NULL, 
+                             num.dim.integration = num.dim.integration ,
+                             num.PCA = num.PCA,
+                             num.PC.used.in.UMAP = num.PC.used.in.UMAP,
+                             num.PC.used.in.Clustering = num.PC.used.in.Clustering,
+                             cluster.resolution = cluster.resolution,
+                             my_random_seed = 42,
+                             umap.method = "uwot",
+                             genes.to.not.run.PCA = NULL,
+                             inte_pca_reduction_name = "INTE_PCA", 
+                             inte_umap_reduction_name = "INTE_UMAP")
+  saveRDS(object = s.obj, file.path(path.to.03.output, sprintf("%s.filter_contaminated_cells.clusterRes_%s.rds", PROJECT, cluster.resolution)))
+} else {
+  s.obj <- readRDS(file.path(path.to.03.output, sprintf("%s.filter_contaminated_cells.clusterRes_%s.rds", PROJECT, cluster.resolution)))
+}
+```
+
+# UMAP all cells
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+DimPlot(object = s.obj, reduction = "INTE_UMAP", label = TRUE, label.box = TRUE, repel = TRUE)
+```
+
+# UMAP
+
+## All samples, grouped by clusters
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+DimPlot(object = s.obj, reduction = "INTE_UMAP", label = TRUE, label.box = TRUE, repel = TRUE, pt.size = 1)
+```
+
+## All samples, grouped by samples
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+DimPlot(object = s.obj, reduction = "INTE_UMAP", label = TRUE, label.box = TRUE, repel = TRUE, pt.size = 1, group.by = "name")
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=21, fig.height=15}
+DimPlot(object = s.obj, reduction = "INTE_UMAP", label = TRUE, label.box = FALSE, repel = TRUE, pt.size = 1, split.by = "name", ncol = 2, label.size = 12) 
+```
+
+## Violin plots: Marker genes
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+list.of.marker.genes <- c("Sell", "Ccr7", "Ly6c1", "Satb1", "Bcl6", "Cxcr5", "Tbx21", "Foxp3",
+                          "Rorc", "Ifit3", "Top2a", "Cenpa", "Izumo1r", "Ctla4", "Anxa2")
+
+print("List of genes shown on Violin plots")
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+print(list.of.marker.genes)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+VlnPlot(object = s.obj, assay = "RNA", features = list.of.marker.genes)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=15}
+selected.clusters <- c(0, 1)
+input.gene <- "Izumo1r"
+
+selected.cluster.cells <- row.names(subset(s.obj@meta.data, s.obj@meta.data$seurat_clusters %in% selected.clusters))
+count.mtx <- GetAssayData(object = s.obj, slot = "counts", assay = "RNA")[input.gene, ]
+count.mtx.pos <- count.mtx[count.mtx > 0] %>% names()
+count.mtx.zero <- count.mtx[count.mtx == 0] %>% names()
+
+selected.cluster.cells.pos <- intersect(count.mtx.pos, row.names(subset(s.obj@meta.data, s.obj@meta.data$seurat_clusters %in% selected.clusters)))
+selected.cluster.cells.zero <- intersect(count.mtx.zero, row.names(subset(s.obj@meta.data, s.obj@meta.data$seurat_clusters %in% selected.clusters)))
+
+meta.data <- s.obj@meta.data %>% 
+    rownames_to_column("barcode") 
+  
+assign.barcode.to.cluster <- function(input.barcode){
+    if (input.barcode %in% selected.cluster.cells.pos){
+      return(sprintf("%s_pos", input.gene))
+    } else if (input.barcode %in% selected.cluster.cells.zero){
+      return(sprintf("%s_zero", input.gene))
+    } else {
+      cluster <- subset(meta.data, meta.data$barcode == input.barcode)$seurat_clusters
+      return(cluster)
+    }
+}
+
+meta.data <- meta.data %>%
+    rowwise() %>%
+    mutate(selected.cluster = assign.barcode.to.cluster(barcode)) %>%
+    column_to_rownames("barcode")
+  
+meta.data <- meta.data[row.names(s.obj@meta.data), ]
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=15}
+s.obj <- AddMetaData(object = s.obj, metadata = meta.data$selected.cluster, col.name = sprintf("cluster_%s", input.gene))
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+DimPlot(object = s.obj, reduction = "INTE_UMAP", label = TRUE, label.box = TRUE, group.by = sprintf("cluster_%s", input.gene))
+```
+
+## Positive cluster and zero cluster expression of the input gene
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+print(sprintf("Input gene: %s", input.gene))
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+DimPlot(object = s.obj, reduction = "INTE_UMAP", cells.highlight = list(
+  positive = selected.cluster.cells.pos,
+  zero = selected.cluster.cells.zero
+), cols.highlight = c("#f5629d", "#62b5f5"), label = TRUE, label.box = TRUE, repel = TRUE, group.by = sprintf("cluster_%s", input.gene))
+```
+
+## Cluster marker genes
+
+Applying the `wilcox` test on all genes to find the highly expressed genes in each cluster. 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+Idents(s.obj) <- sprintf("cluster_%s", input.gene)
+
+if (file.exists(file.path(path.to.06.output, sprintf("cluster_marker_genes_clusterRes_subcluster_%s_%s.rds", input.gene, cluster.resolution))) == FALSE){
+  cluster.markers.selected.gene <- FindAllMarkers(object = s.obj, assay = "RNA", test.use = "wilcox")
+  cluster.markers.selected.gene <- subset(cluster.markers.selected.gene, cluster.markers.selected.gene$p_val_adj <= 0.05 & cluster.markers.selected.gene$avg_log2FC >= 0)
+  saveRDS(cluster.markers.selected.gene, file.path(path.to.06.output, sprintf("cluster_marker_genes_clusterRes_subcluster_%s_%s.rds", input.gene, cluster.resolution))  )
+} else {
+  cluster.markers.selected.gene <- readRDS(file.path(path.to.06.output, sprintf("cluster_marker_genes_clusterRes_subcluster_%s_%s.rds", input.gene, cluster.resolution)))
+}
+
+```
+
+### Heatmap: Top N up-gene in each clusters
+```{r echo=FALSE, warning=FALSE, results='asis', message=FALSE, fig.width=15, fig.height=10}
+topN <- 10
+tmp.cluster.markers.selected.gene.up <- subset(cluster.markers.selected.gene, cluster.markers.selected.gene$avg_log2FC >= 0 & cluster.markers.selected.gene$p_val_adj <= 0.05)
+
+selected.genes <- data.frame()
+for (cluster.id in unique(tmp.cluster.markers.selected.gene.up$cluster)){
+  tmp <- subset(tmp.cluster.markers.selected.gene.up, tmp.cluster.markers.selected.gene.up$cluster == cluster.id) %>% arrange(desc(avg_log2FC))
+  tmp.genes <- head(tmp, topN)
+  selected.genes <- rbind(selected.genes, tmp.genes)
+}
+
+p <- DoHeatmap(object = s.obj, features = selected.genes$gene) + scale_fill_viridis_c(option = "plasma")
+ggsave(plot = p, filename = "Heatmap_topN_up_genes_in_all_clusters.svg", path = file.path(path.to.06.output), device = "svg", width = 28, height = 20, dpi = 300)
+```
+
+
+```{r echo=FALSE, warning=FALSE, results='asis', message=FALSE, fig.width=28, fig.height=20}
+print(p)
+```
+
+
+### Tables of all cluster marker genes {.tabset}
+```{r echo=FALSE, include=FALSE}
+cluster.markers.selected.gene %>% create_dt()
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=30, fig.height=20}
+
+for (cluster.id in sort(unique(cluster.markers.selected.gene$cluster))){
+  tmp.cluster.markers.selected.gene <- subset(cluster.markers.selected.gene, cluster.markers.selected.gene$cluster == cluster.id) %>% arrange(desc(avg_log2FC))
+  tmp.cluster.markers.selected.gene <- tmp.cluster.markers.selected.gene %>% mutate_if(is.numeric, round, 6) 
+  
+  cat(paste("\n\n#### Cluster: ", cluster.id, "##\n"))
+  print( htmltools::tagList(datatable(tmp.cluster.markers.selected.gene, extensions = 'Buttons',
+                                      filter = "top",
+                                      options = list(dom = 'Blfrtip',
+                                                     buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+                                                     lengthMenu = list(c(10,25,50,-1),
+                                                                       c(10,25,50,"All")),
+                                                     columnDefs = list(list(
+                                                       targets = "_all",
+                                                       render = JS(
+                                                         "function(data, type, row, meta) {",
+                                                         "return type === 'display' && data != null && data.length > 100 ?",
+                                                         "'<span title=\"' + data + '\">' + data.substr(0, 100) + '...</span>' : data;",
+                                                         "}")
+                                                     ))
+                                      ))))
+  cat("\n \n")
+}
+
+```
+
+
+### Top-12 cluster marker genes `FeaturePlot` {.tabset}
+Here we just show the top-12 genes (ranked by `avg_log2FC`) for each cluster. 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=15}
+for (cluster.id in sort(unique(s.obj@meta.data[[sprintf("cluster_%s", input.gene)]]))){
+  DefaultAssay(s.obj) <- "RNA"
+  cat(sprintf("#### Cluster %s \n", cluster.id))
+  tmp.cluster.markers.selected.gene <- subset(cluster.markers.selected.gene, cluster.markers.selected.gene$cluster == cluster.id) %>% arrange(desc(avg_log2FC))
+  p <- FeaturePlot(object = s.obj, reduction = "INTE_UMAP", features = head(tmp.cluster.markers.selected.gene, 12)$gene, ncol = 3, label = TRUE, pt.size = 0.5, label.size = 5, label.color = "red")  
+  print(p)
+  cat("\n \n")
+}
+```
+
+### Top-12 cluster marker genes `DotPlot` {.tabset}
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=15}
+for (cluster.id in sort(unique(s.obj@meta.data[[sprintf("cluster_%s", input.gene)]]))){
+  DefaultAssay(s.obj) <- "RNA"
+  cat(sprintf("#### Cluster %s \n", cluster.id))
+  tmp.cluster.markers.selected.gene <- subset(cluster.markers.selected.gene, cluster.markers.selected.gene$cluster == cluster.id) %>% arrange(desc(avg_log2FC))
+  p <- DotPlot(object = s.obj, features = head(tmp.cluster.markers.selected.gene, 9)$gene)  
+  print(p)
+  cat("\n \n")
+}
+```
+
+### Top-12 cluster marker genes `Vlnplot` {.tabset}
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=15}
+for (cluster.id in sort(unique(s.obj@meta.data[[sprintf("cluster_%s", input.gene)]]))){
+  DefaultAssay(s.obj) <- "RNA"
+  cat(sprintf("#### Cluster %s \n", cluster.id))
+  tmp.cluster.markers.selected.gene <- subset(cluster.markers.selected.gene, cluster.markers.selected.gene$cluster == cluster.id) %>% arrange(desc(avg_log2FC))
+  p <- VlnPlot(object = s.obj, features = head(tmp.cluster.markers.selected.gene, 9)$gene)  
+  print(p)
+  cat("\n \n")
+}
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=15}
+if (file.exists(file.path(path.to.06.output, sprintf("%s.filter_contaminated_cells.clusterRes_%s_subcluster_gene_%s.rds", PROJECT, cluster.resolution, input.gene))) == FALSE){
+  saveRDS(s.obj, file.path(path.to.06.output, sprintf("%s.filter_contaminated_cells.clusterRes_%s_subcluster_gene_%s.rds", PROJECT, cluster.resolution, input.gene))) 
+}
+
+```
