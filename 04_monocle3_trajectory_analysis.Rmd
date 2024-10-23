@@ -50,25 +50,32 @@ rm(list = ls())
 my_random_seed <- 42
 
 if ("monocle3" %in% installed.packages() == FALSE){
-  devtools::install_github('cole-trapnell-lab/monocle3')
+  devtools::install_github('cole-trapnell-lab/monocle3', upgrade = "never")
+  
 }
-
-# devtools::install_github("statOmics/tradeSeq")
-
+if ("tradeSeq" %in% installed.packages() == FALSE){
+  devtools::install_github("statOmics/tradeSeq", upgrade = "never")
+}
 library(monocle3)
 
 path.to.pipeline.src <- "/home/hieunguyen/CRC1382/src_2023/src_pipeline"
 source(file.path(path.to.pipeline.src, "scRNA_GEX_pipeline", "processes_src", "import_libraries.R"))
 source(file.path(path.to.pipeline.src, "scRNA_GEX_pipeline", "processes_src", "helper_functions.R"))
 
-outdir <- "/media/hieunguyen/CRC1382H/CRC1382/outdir"
-PROJECT <- "20231018_SAlBounny"
+outdir <- "/home/hieunguyen/CRC1382/outdir"
+PROJECT <- "SAlBounny_full"
+output.version <- "20241021"
 
-path.to.main.output <- file.path(outdir, PROJECT, "data_analysis")
+path.to.main.output <- file.path(outdir, PROJECT, output.version, "data_analysis")
 path.to.04.output <- file.path(path.to.main.output, "04_output")
 dir.create(path.to.04.output, showWarnings = FALSE, recursive = TRUE)
 
-path.to.s.obj <- file.path(outdir, PROJECT, "data_analysis", "03_output", "20231018_SAlBounny.filter_contaminated_cells.clusterRes_0.5.subClusterFoxp3_cluster6.rds")
+path.to.s.obj <- file.path(outdir, 
+                           PROJECT, 
+                           output.version, 
+                           "data_analysis", 
+                           "03_output", 
+                           "SAlBounny_full.filter_contaminated_cells.clusterRes_0.5.subClusterFoxp3_cluster6.rds")
 
 s.obj.name <- basename(path.to.s.obj)
 

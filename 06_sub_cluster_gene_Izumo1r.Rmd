@@ -331,5 +331,4 @@ for (cluster.id in sort(unique(s.obj@meta.data[[sprintf("cluster_%s", input.gene
 if (file.exists(file.path(path.to.06.output, sprintf("%s.filter_contaminated_cells.clusterRes_%s_subcluster_gene_%s.rds", PROJECT, cluster.resolution, input.gene))) == FALSE){
   saveRDS(s.obj, file.path(path.to.06.output, sprintf("%s.filter_contaminated_cells.clusterRes_%s_subcluster_gene_%s.rds", PROJECT, cluster.resolution, input.gene))) 
 }
-
 ```
