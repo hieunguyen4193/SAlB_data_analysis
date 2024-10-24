@@ -445,7 +445,3 @@ for (input.test in names(tradeseq.testres)){
   cat("\n \n")
 }
 ```
-
-
-
-

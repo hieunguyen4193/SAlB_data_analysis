@@ -12,7 +12,8 @@ rm(list = ls())
 # install.packages("/home/hieunguyen/CRC1382/storage/offline_pkgs/org.Mm.eg.db_3.18.0.tar.gz", type = "sources", repos = NULL)
 # BiocManager::install("org.Mm.eg.db", update = FALSE )
 # install.packages("heatmaply")
-
+# install.packages("https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.5-4.1.tar.gz", type = "source", repos = NULL)
+# install.packages("https://cran.r-project.org/src/contrib/Archive/ggplot2/ggplot2_3.4.4.tar.gz", type = "source", repos = NULL)
 scrna_pipeline_src <- "/home/hieunguyen/CRC1382/src_2023/src_pipeline/scRNA_GEX_pipeline/processes_src"
 source(file.path(scrna_pipeline_src, "import_libraries.R"))
 source(file.path(scrna_pipeline_src, "helper_functions.R"))

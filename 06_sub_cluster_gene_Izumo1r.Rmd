@@ -93,6 +93,18 @@ s.obj <- subset(s.obj.origin, seurat_clusters %in% c(7, 9, 10, 12, 13, 14) == FA
 
 # cluster.resolution <- params$cluster.resolution
 cluster.resolution <- 0.5
+
+color.list <- list(
+  Izumo1r_pos = "#00BFC4",
+  Izumo1r_zero = "#F8766D",
+  `2` = "#00BE67", 
+  `3` = "#00A9FF",
+  `4` = "#7CAE00",
+  `5` = "#CD9600",
+  `6` = "#FF61CC",
+  `7` = "#C77CFF",
+  `8` = "gray28")
+
 ```
 
 
@@ -326,6 +338,23 @@ for (cluster.id in sort(unique(s.obj@meta.data[[sprintf("cluster_%s", input.gene
   cat("\n \n")
 }
 ```
+
+# New UMAP plot with selected colors
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+meta.data <- s.obj@meta.data %>% rownames_to_column("barcode")
+meta.data[[sprintf("cluster_%s", input.gene)]] <- factor(meta.data[[sprintf("cluster_%s", input.gene)]], levels = names(color.list))
+meta.data <- meta.data %>% column_to_rownames("barcode")
+meta.data <- meta.data[row.names(s.obj@meta.data),]
+s.obj <- AddMetaData(object = s.obj, col.name = sprintf("cluster_%s.plot", input.gene), metadata = meta.data[[sprintf("cluster_%s", input.gene)]])
+DimPlot(object = s.obj, 
+        reduction = "INTE_UMAP", 
+        label = TRUE, 
+        label.box = TRUE, 
+        repel = TRUE, 
+        group.by = sprintf("cluster_%s", input.gene), 
+        cols = unlist(color.list))
+```
+
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=15}
 if (file.exists(file.path(path.to.06.output, sprintf("%s.filter_contaminated_cells.clusterRes_%s_subcluster_gene_%s.rds", PROJECT, cluster.resolution, input.gene))) == FALSE){
