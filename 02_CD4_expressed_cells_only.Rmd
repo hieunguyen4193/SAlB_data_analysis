@@ -71,7 +71,7 @@ my_random_seed <- 42
 path.to.src <- "/home/hieunguyen/CRC1382/src_2023/src_pipeline/scRNA_GEX_pipeline/processes_src"
 outdir <- "/home/hieunguyen/CRC1382/outdir"
 PROJECT <- "SAlBounny_full"
-output.version <- "20241021"
+output.version <- "20241024_remove_XY_genes"
 
 path.to.main.output <- file.path(outdir, PROJECT, output.version, "data_analysis")
 dir.create(path.to.main.output, showWarnings = FALSE, recursive = TRUE)

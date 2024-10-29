@@ -13,7 +13,7 @@ path2src <- file.path(path.to.pipeline.src, "processes_src")
 source(file.path(path2src, "import_libraries.R"))
 source(file.path(path.to.pipeline.src, "scRNA_GEX_pipeline.R"))
 outdir <- "/home/hieunguyen/CRC1382/outdir"
-output.version <- "20241021"
+output.version <- "20241024_remove_XY_genes"
 path.to.storage <- "/media/hieunguyen/HD01/storage"
 path2input <- file.path(path.to.storage, PROJECT, "cellranger_output")
 
@@ -112,7 +112,7 @@ s.obj <- run_pipeline_GEX(path2src = path2src,
                           use.sctransform = FALSE,
                           filtered.barcodes = filtered.barcodes,
                           filter.thresholds = filter.thresholds,
-                          input.method = "normal",
+                          input.method = "remove_selected_genes",
                           cluster.resolution = cluster.resolution,
                           num.dim.integration = num.dim.integration,
                           inte_pca_reduction_name = "INTE_PCA",
@@ -120,7 +120,7 @@ s.obj <- run_pipeline_GEX(path2src = path2src,
                           with.VDJ = FALSE, 
                           sw = sw, 
                           k.filter = 200,
-                          remove.genes = NULL)
+                          remove.genes = remove.genes)
 
 #### ALWAYS REMEMBER TO SAVE SESSIONINFO !!!!!!
 writeLines(capture.output(sessionInfo()), file.path(path.to.output, sprintf("%s_sessionInfo.txt", PROJECT)))
