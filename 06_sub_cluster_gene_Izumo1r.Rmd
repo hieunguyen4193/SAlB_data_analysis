@@ -352,6 +352,9 @@ cell.annotation <- list(
   `7` = "Early activation/Trm"
 )
 
+celltype.cols <- color.list
+names(celltype.cols) <- cell.annotation
+
 merge_cluster_func <- function(x){
   if (x %in% c("3", "7")){
     return("3")
@@ -367,24 +370,28 @@ meta.data <- meta.data %>% rowwise() %>%
   mutate(plot.cluster = merge_cluster_func(cluster_Izumo1r)) %>%
   mutate(celltype = cell.annotation[[plot.cluster]]) %>% 
   column_to_rownames("barcode")
+meta.data$celltype <- factor(meta.data$celltype, levels = names(celltype.cols))
 
 meta.data <- meta.data[row.names(s.obj@meta.data), ]
 s.obj <- AddMetaData(object = s.obj, metadata = meta.data$plot.cluster,  col.name = "plot.cluster")
 s.obj <- AddMetaData(object = s.obj, metadata = meta.data$celltype, col.name = "celltype")
+
+coldf <- data.frame(celltype.cols) %>% t() %>% as.data.frame() %>% rownames_to_column("celltype")
+colnames(coldf) <- c("celltype", "color")
+write.csv(coldf, file.path(path.to.06.output, "color.csv"))
 ```
 
-
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
-DimPlot(object = s.obj, reduction = "INTE_UMAP", group.by = "plot.cluster", label = TRUE, label.box = TRUE, repel = TRUE, pt.size = 1)
+DimPlot(object = s.obj, reduction = "INTE_UMAP", group.by = "plot.cluster", label = TRUE, label.box = TRUE, repel = TRUE, pt.size = 1, cols = unlist(celltype.cols))
 ```
 
-
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
-DimPlot(object = s.obj, reduction = "INTE_UMAP", group.by = "celltype", label = TRUE, label.box = TRUE, repel = TRUE, pt.size = 1)
+DimPlot(object = s.obj, reduction = "INTE_UMAP", group.by = "celltype", label = TRUE, label.box = TRUE, repel = TRUE, pt.size = 1, cols = unlist(celltype.cols))
 ```
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=15}
-if (file.exists(file.path(path.to.06.output, sprintf("%s.filter_contaminated_cells.clusterRes_%s_subcluster_gene_%s.rds", PROJECT, cluster.resolution, input.gene))) == FALSE){
+rerun <- TRUE
+if (file.exists(file.path(path.to.06.output, sprintf("%s.filter_contaminated_cells.clusterRes_%s_subcluster_gene_%s.rds", PROJECT, cluster.resolution, input.gene))) == FALSE | rerun == TRUE){
   saveRDS(s.obj, file.path(path.to.06.output, sprintf("%s.filter_contaminated_cells.clusterRes_%s_subcluster_gene_%s.rds", PROJECT, cluster.resolution, input.gene))) 
 }
 ```
