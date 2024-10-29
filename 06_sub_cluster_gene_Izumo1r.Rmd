@@ -365,17 +365,22 @@ merge_cluster_func <- function(x){
 meta.data <- s.obj@meta.data %>% rownames_to_column("barcode")
 meta.data <- meta.data %>% rowwise() %>%
   mutate(plot.cluster = merge_cluster_func(cluster_Izumo1r)) %>%
-  mutate(celltype = cell.annotation[[plot.cluster]])
+  mutate(celltype = cell.annotation[[plot.cluster]]) %>% 
+  column_to_rownames("barcode")
+
+meta.data <- meta.data[row.names(s.obj@meta.data), ]
+s.obj <- AddMetaData(object = s.obj, metadata = meta.data$plot.cluster,  col.name = "plot.cluster")
+s.obj <- AddMetaData(object = s.obj, metadata = meta.data$celltype, col.name = "celltype")
 ```
 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
-DimPlot(object = s.obj, reduction = "INTE_UMAP", group.by = "plot.cluster", label = TRUE, label.box = TRUE, repel = TRUE)
+DimPlot(object = s.obj, reduction = "INTE_UMAP", group.by = "plot.cluster", label = TRUE, label.box = TRUE, repel = TRUE, pt.size = 1)
 ```
 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
-DimPlot(object = s.obj, reduction = "INTE_UMAP", group.by = "celltype", label = TRUE, label.box = TRUE, repel = TRUE)
+DimPlot(object = s.obj, reduction = "INTE_UMAP", group.by = "celltype", label = TRUE, label.box = TRUE, repel = TRUE, pt.size = 1)
 ```
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=15}

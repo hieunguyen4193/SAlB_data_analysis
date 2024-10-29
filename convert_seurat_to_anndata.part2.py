@@ -26,10 +26,10 @@ warnings.filterwarnings("ignore")
 #####---------------------------------------------------------------------------------------------------------#####
 ##### CONFIGURATIONS
 outdir = "/home/hieunguyen/CRC1382/outdir"
-PROJECT = "SAlBounny_full.filter_contaminated_cells.clusterRes_0.5"
-output.version = "20241021"
-
-path_to_main_output = os.path.join(outdir, "20231018_SAlBounny", "data_analysis")
+PROJECT = "SAlBounny_full"
+output_version = "20241021"
+object_name = "SAlBounny_full.filter_contaminated_cells.clusterRes_0.5"
+path_to_main_output = os.path.join(outdir, PROJECT, output_version, "data_analysis")
 path_to_01_output = os.path.join(path_to_main_output, "01_output")
 path_to_02_output = os.path.join(path_to_main_output, "02_output")
 path_to_03_output = os.path.join(path_to_main_output, "03_output")
@@ -38,17 +38,17 @@ path_to_08_output = os.path.join(path_to_main_output, "08_output")
 path_to_seurat2anndata = os.path.join(path_to_08_output, "seurat2anndata")
 #####---------------------------------------------------------------------------------------------------------#####
 # load sparse matrix:
-print(os.path.join(path_to_seurat2anndata, "counts_{}.mtx".format(PROJECT)))
-X = io.mmread(os.path.join(path_to_seurat2anndata, "counts_{}.mtx".format(PROJECT)))
+print(os.path.join(path_to_seurat2anndata, "counts_{}.mtx".format(object_name)))
+X = io.mmread(os.path.join(path_to_seurat2anndata, "counts_{}.mtx".format(object_name)))
 
 # create anndata object
 adata = anndata.AnnData(X=X.transpose().tocsr())
 
 # load cell metadata:
-cell_meta = pd.read_csv(os.path.join(path_to_seurat2anndata, "metadata_{}.csv".format(PROJECT)))
+cell_meta = pd.read_csv(os.path.join(path_to_seurat2anndata, "metadata_{}.csv".format(object_name)))
 
 # load gene names:
-with open(os.path.join(path_to_seurat2anndata, "gene_names_{}.csv".format(PROJECT)), 'r') as f:
+with open(os.path.join(path_to_seurat2anndata, "gene_names_{}.csv".format(object_name)), 'r') as f:
   gene_names = f.read().splitlines()
 # set anndata observations and index obs by barcodes, var by gene names
 adata.obs = cell_meta
@@ -56,7 +56,7 @@ adata.obs.index = adata.obs['barcode']
 adata.var.index = gene_names
 
 # load dimensional reduction:
-pca = pd.read_csv(os.path.join(path_to_seurat2anndata, "pca_{}.csv".format(PROJECT)))
+pca = pd.read_csv(os.path.join(path_to_seurat2anndata, "pca_{}.csv".format(object_name)))
 pca.index = adata.obs.index
 
 # set pca and umap
@@ -64,7 +64,7 @@ adata.obsm['X_pca'] = pca.to_numpy()
 adata.obsm['X_umap'] = np.vstack((adata.obs['UMAP_1'].to_numpy(), adata.obs['UMAP_2'].to_numpy())).T
 
 # save dataset as anndata format
-adata.write(os.path.join(path_to_seurat2anndata, '{}.h5ad'.format(PROJECT)))
+adata.write(os.path.join(path_to_seurat2anndata, '{}.h5ad'.format(object_name)))
 
 # reload dataset
-adata = sc.read_h5ad(os.path.join(path_to_seurat2anndata, '{}.h5ad'.format(PROJECT)))
+adata = sc.read_h5ad(os.path.join(path_to_seurat2anndata, '{}.h5ad'.format(object_name)))

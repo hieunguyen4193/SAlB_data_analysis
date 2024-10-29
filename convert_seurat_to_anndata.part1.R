@@ -34,7 +34,8 @@ path.to.seurat.obj <- file.path(path.to.06.output,
                                 sprintf("%s.filter_contaminated_cells.clusterRes_%s_subcluster_gene_%s.rds", 
                                         PROJECT, 
                                         cluster.resolution, 
-                                        input.gene))
+                                        input.gene)) 
+
 s.obj <- readRDS(path.to.seurat.obj)
 
 object.name <- str_replace(basename(path.to.seurat.obj), ".rds", "")
