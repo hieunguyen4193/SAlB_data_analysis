@@ -28,7 +28,7 @@ warnings.filterwarnings("ignore")
 outdir = "/home/hieunguyen/CRC1382/outdir"
 PROJECT = "SAlBounny_full"
 output_version = "20241021"
-object_name = "SAlBounny_full.filter_contaminated_cells.clusterRes_0.5"
+object_name = "SAlBounny_full.filter_contaminated_cells.clusterRes_0.5_subcluster_gene_Izumo1r"
 path_to_main_output = os.path.join(outdir, PROJECT, output_version, "data_analysis")
 path_to_01_output = os.path.join(path_to_main_output, "01_output")
 path_to_02_output = os.path.join(path_to_main_output, "02_output")

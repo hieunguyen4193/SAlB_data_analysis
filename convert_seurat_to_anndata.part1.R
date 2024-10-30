@@ -28,7 +28,6 @@ path.to.08.output <- file.path(path.to.main.output, "08_output")
 path.to.seurat2anndata <- file.path(path.to.08.output, "seurat2anndata")
 dir.create(path.to.seurat2anndata, showWarnings = FALSE, recursive = TRUE)
 
-# path.to.seurat.obj <- file.path(path.to.03.output, sprintf("%s.filter_contaminated_cells.clusterRes_%s.rds", PROJECT, cluster.resolution))
 input.gene <- "Izumo1r"
 path.to.seurat.obj <- file.path(path.to.06.output, 
                                 sprintf("%s.filter_contaminated_cells.clusterRes_%s_subcluster_gene_%s.rds", 
