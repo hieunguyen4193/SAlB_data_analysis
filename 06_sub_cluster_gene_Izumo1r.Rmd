@@ -376,13 +376,18 @@ meta.data <- meta.data[row.names(s.obj@meta.data), ]
 s.obj <- AddMetaData(object = s.obj, metadata = meta.data$plot.cluster,  col.name = "plot.cluster")
 s.obj <- AddMetaData(object = s.obj, metadata = meta.data$celltype, col.name = "celltype")
 
-coldf <- data.frame(celltype.cols) %>% t() %>% as.data.frame() %>% rownames_to_column("celltype")
-colnames(coldf) <- c("celltype", "color")
-write.csv(coldf, file.path(path.to.06.output, "color.csv"))
+coldf <- data.frame(cell.annotation) %>% t() %>% 
+  as.data.frame() %>% 
+  rownames_to_column("cluster") %>%
+  rowwise() %>%
+  mutate(cluster = str_replace(cluster, "X", "")) %>%
+  mutate(color = celltype.cols[[V1]])
+
+write.csv(coldf, file.path(path.to.06.output, "colordf.csv"))
 ```
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
-DimPlot(object = s.obj, reduction = "INTE_UMAP", group.by = "plot.cluster", label = TRUE, label.box = TRUE, repel = TRUE, pt.size = 1, cols = unlist(celltype.cols))
+DimPlot(object = s.obj, reduction = "INTE_UMAP", group.by = "plot.cluster", label = TRUE, label.box = TRUE, repel = TRUE, pt.size = 1)
 ```
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
