@@ -49,7 +49,7 @@ write.csv(s.obj@meta.data, file=file.path(path.to.seurat2anndata, sprintf('metad
 
 # write expression counts matrix
 library(Matrix)
-counts_matrix <- GetAssayData(s.obj, assay='RNA', slot='counts')
+counts_matrix <- GetAssayData(s.obj, assay='RNA', slot='data')
 writeMM(counts_matrix, file=file.path(path.to.seurat2anndata, sprintf('counts_%s.mtx', object.name)))
 
 # write gene names

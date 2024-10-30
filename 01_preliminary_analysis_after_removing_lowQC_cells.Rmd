@@ -55,6 +55,8 @@ scrna_pipeline_src <- "/home/hieunguyen/CRC1382/src_2023/src_pipeline/scRNA_GEX_
 source(file.path(scrna_pipeline_src, "import_libraries.R"))
 source(file.path(scrna_pipeline_src, "helper_functions.R"))
 
+# install.packages("https://cran.r-project.org/src/contrib/Archive/knitr/knitr_1.45.tar.gz", type = "source", repos = NULL)
+# install.packages("https://cran.r-project.org/src/contrib/Archive/rmarkdown/rmarkdown_2.26.tar.gz", type = "source", repos = NULL)
 #####----------------------------------------------------------------------#####
 # CONFIGURATIONS 
 #####----------------------------------------------------------------------#####
