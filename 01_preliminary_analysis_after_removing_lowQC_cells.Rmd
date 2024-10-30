@@ -65,7 +65,8 @@ num.dim.cluster <- 25
 num.PC.used.in.Clustering <- 25
 num.PC.used.in.UMAP <- 25
 my_random_seed <- 42
-output.version <- "20241021"
+# output.version <- "20241021"
+output.version <- "20241024_remove_XY_genes"
 path.to.src <- "/home/hieunguyen/CRC1382/src_2023/src_pipeline/scRNA_GEX_pipeline/processes_src"
 outdir <- "/home/hieunguyen/CRC1382/outdir"
 PROJECT <- "SAlBounny_full"
